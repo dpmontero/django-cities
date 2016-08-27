@@ -35,6 +35,7 @@ from django.core.management.base import BaseCommand
 from django.template.defaultfilters import slugify
 from django.db import transaction
 from django.contrib.gis.gdal.envelope import Envelope
+from django.db.models import ForeignKey
 
 from ...conf import *
 from ...conf import CITIES_IGNORE_EMPTY_REGIONS
@@ -56,24 +57,26 @@ class Command(BaseCommand):
         data_dir = os.path.join(app_dir, 'data')
     logger = logging.getLogger("cities")
 
-    option_list = BaseCommand.option_list + (
-        make_option(
+    def add_arguments(self, parser):
+
+        parser.add_argument(
             '--force',
             action='store_true',
             default=False,
-            help='Import even if files are up-to-date.'),
-        make_option(
+            help='Import even if files are up-to-date.')
+
+        parser.add_argument(
             '--import',
             metavar="DATA_TYPES",
             default='all',
             help='Selectively import data. Comma separated list of data ' +
-                 'types: ' + str(import_opts).replace("'", '')),
-        make_option(
+                 'types: ' + str(import_opts).replace("'", ''))
+
+        parser.add_argument(
             '--flush',
             metavar="DATA_TYPES",
             default='',
-            help="Selectively flush data. Comma separated list of data types."),
-    )
+            help="Selectively flush data. Comma separated list of data types.")
 
     @_transact
     def handle(self, *args, **options):
@@ -581,8 +584,8 @@ class Command(BaseCommand):
             alt = AlternativeName()
             alt.id = int(item['nameid'])
             alt.name = item['name']
-            alt.is_preferred = item['isPreferred']
-            alt.is_short = item['isShort']
+            alt.is_preferred = bool(item['isPreferred'])
+            alt.is_short = bool(item['isShort'])
             alt.language = locale
 
             if not self.call_hook('alt_name_post', alt, item):
